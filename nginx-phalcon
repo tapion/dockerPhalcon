@@ -1,0 +1,67 @@
+FROM centos:centos7
+MAINTAINER Tapion
+
+RUN yum -y update; yum clean all
+RUN yum -y install epel-release tar ; yum clean all
+RUN yum -y install nginx ; yum clean all
+ADD nginx.conf /etc/nginx/nginx.conf
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf
+RUN curl https://git.centos.org/sources/httpd/c7/acf5cccf4afaecf3afeb18c50ae59fd5c6504910 \
+    | tar -xz -C /usr/share/nginx/html \
+    --strip-components=1
+RUN sed -i -e 's/Apache/nginx/g' -e '/apache_pb.gif/d' \ 
+    /usr/share/nginx/html/index.html
+# Install PHP 7.0 from Remi YUM repository...
+RUN rpm -Uvh http://rpms.remirepo.net/enterprise/remi-release-7.rpm && \
+
+  yum install -y \
+    git \
+    gcc \
+    make \
+    php70-php \
+    php70-php-bcmath \
+    php70-php-cli \
+    php70-php-common \
+    php70-php-devel \
+    php70-php-fpm \
+    php70-php-gd \
+    php70-php-gmp \
+    php70-php-horde-horde-lz4 \
+    php70-php-intl \
+    php70-php-json \
+    php70-php-mbstring \
+    php70-php-mcrypt \
+    php70-php-pgsql \
+    php70-php-opcache \
+    php70-php-pdo \
+    php70-php-pear \
+    php70-php-process \
+    php70-php-pspell \
+
+    `# Also install the following PECL packages:` \
+    php70-php-pecl-imagick \
+    php70-php-pecl-memcached \
+    php70-php-pecl-uploadprogress \
+    php70-php-pecl-uuid \
+    php70-php-pecl-zip \
+
+    `# Temporary workaround: one dependant package (http, not essential?) fails to install` \
+    || true && \
+
+  `# Set PATH so it includes newest PHP and its aliases` \
+  ln -sfF /opt/remi/php70/enable /etc/profile.d/php70-paths.sh && \
+  ls -al /etc/profile.d/ && cat /etc/profile.d/php70-paths.sh && \
+  source /etc/profile.d/php70-paths.sh && \
+  php --version && \
+
+  `# Move PHP config files from /etc/opt/remi/php70/* to /etc/* ` \
+  mv -f /etc/opt/remi/php70/php.ini /etc/php.ini && ln -s /etc/php.ini /etc/opt/remi/php70/php.ini && \
+  rm -rf /etc/php.d && mv /etc/opt/remi/php70/php.d /etc/. && ln -s /etc/php.d /etc/opt/remi/php70/php.d && \
+
+  echo 'PHP 7 installed
+
+
+
+EXPOSE 80
+
+CMD [ "/usr/sbin/nginx" ]
